@@ -1,5 +1,5 @@
-cavid-shamilov/sql-joins-adventureworks-analytics# 
-📊 Advanced SQL JOINs Analysis - AdventureWorks
+cavid-shamilov/sql-joins-adventureworks-analytics
+# 📊 Advanced SQL JOINs Analysis - AdventureWorks
 
 ## 📌 Project Overview
 This project showcases real-world analytical SQL queries focusing on various `JOIN` operations using the **AdventureWorks** dataset in Microsoft SQL Server.
