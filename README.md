@@ -19,7 +19,7 @@ This project showcases real-world analytical SQL queries focusing on various `JO
 *Created by [Cavid] - Aspiring Data Analyst*
 
 
-Scenario 2: The customer relations team requires an operational audit of purchasing customers from the 2016 fiscal year. Retrieve customer contact details (FirstName, LastName, EmailAddress) alongside their corresponding sales order numbers (OrderNumber) for all 2016 transactions.
+Scenario 1: The customer relations team requires an operational audit of purchasing customers from the 2016 fiscal year. Retrieve customer contact details (FirstName, LastName, EmailAddress) alongside their corresponding sales order numbers (OrderNumber) for all 2016 transactions.
 
 ```sql
 select 
@@ -54,7 +54,9 @@ from AdventureWorks_Sales_2017 as AS2017
 inner join AdventureWorks_Products as AP
 on AS2017.ProductKey=AP.ProductKey
 ```
+
 Scenario 4: The category management team is conducting a detailed review of product sales across categories and subcategories for 2017. Retrieve the order numbers, product names, subcategory names, and main category names for all transactions completed in 2017.
+
 ```sql
 select OrderNumber,
 ProductName,
@@ -68,7 +70,9 @@ on AP.ProductSubcategoryKey=APS.ProductSubcategoryKey
 inner join AdventureWorks_Product_Categories as APC
 on APS.ProductCategoryKey=APC.ProductCategoryKey
 ```
+
 Scenario 5: The marketing team is reviewing purchasing patterns within the European market. Retrieve customer first names, last names, order numbers, order dates, and email addresses for all sales transactions originating from France in 2017.
+
 ```sql
 select firstname,
 LastName,
@@ -83,7 +87,52 @@ on AS2017.TerritoryKey=AWT.SalesTerritoryKey
 where Country='France'
 ```
 
+Scenario 6: The Sales Director requires a high-level performance summary by product category for 2017. Retrieve each category name alongside the total quantity sold (TotalQuantity) and total revenue generated (TotalRevenue) for all transactions in 2017.
 
+```sql
+select CategoryName,
+sum(OrderQuantity) as [Total Quantity],
+SUM(AS2017.OrderQuantity * AP.ProductPrice) AS [TotalRevenue]
+from AdventureWorks_Sales_2017 as AS2017
+inner join AdventureWorks_Products as AP
+on AS2017.ProductKey=AP.ProductKey
+inner join AdventureWorks_Product_Subcategories as APS
+on AP.ProductSubcategoryKey=APS.ProductSubcategoryKey
+inner join AdventureWorks_Product_Categories as APC
+on APS.ProductCategoryKey=APC.ProductCategoryKey
+group by CategoryName
+```
+
+Scenario 7: Executive management wants to identify high-performing product subcategories in the Australian market for 2017. Retrieve the subcategory names and total quantities sold (TotalQuantity) for all subcategories in Australia that achieved a total volume of 100 units or more in 2017.
+
+```sql
+select SubcategoryName,
+sum(orderquantity) as [Total Quantity]
+from AdventureWorks_Territories as AWT
+inner join AdventureWorks_Sales_2017 as AS2017
+on AWT.SalesTerritoryKey=AS2017.TerritoryKey
+inner join AdventureWorks_Products as AP
+on AS2017.ProductKey=AP.ProductKey
+inner join AdventureWorks_Product_Subcategories as APS
+on AP.ProductSubcategoryKey=APS.ProductSubcategoryKey
+where country='Australia'
+group by SubcategoryName
+having sum(orderquantity)>=100
+```
+Scenario 8: The Marketing Director wants to identify the top 5 customers who purchased the highest volume of products in 2017 for a loyalty reward program. Retrieve the first names, last names, email addresses, and total quantities purchased (TotalProducts) for the top 5 customers, sorted in descending order of total quantity.
+
+```sql
+select top 5
+firstname,
+LastName,
+EmailAddress,
+sum(orderquantity) as [Total Quantity]
+from AdventureWorks_Customers as AC
+inner join AdventureWorks_Sales_2017 as AS2017
+on AC.CustomerKey=AS2017.CustomerKey
+group by FirstName,LastName,EmailAddress
+order by [Total Quantity] desc
+```
 
 
 
