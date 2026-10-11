@@ -237,4 +237,30 @@ group by ProductName,ProductColor,ProductPrice
 
 Scenario 16: The regional strategy team wants to audit territory activity for 2017 to identify underperforming or inactive regions. Retrieve the region name, country, territory group, and total order count (TotalOrders) for 2017 across ALL territories, ensuring regions with zero sales display 0.
 
+```sql
+select continent,
+Country,
+Region,
+isnull(count (distinct OrderNumber), 0) as [Total Order]
+from AdventureWorks_Territories as AWT
+left join AdventureWorks_Sales_2017 as AS2017
+on AWT.SalesTerritoryKey=AS2017.TerritoryKey
+group by continent,country,region
+```
+
+Scenario 17: The category manager wants to audit the 2017 sales performance of a specific bike model/product from the 'Bikes' category (e.g., 'Mountain-200 Black, 42'). Retrieve the product name, model name, and total quantity sold for 2017, ensuring zero sales are displayed as 0 using a left join approach.
+
+```sql
+select
+ProductName,
+ModelName,
+isnull(sum(OrderQuantity), 0) as [Total Quantity Sold] 
+from  AdventureWorks_Products as AP 
+left join AdventureWorks_Sales_2017 as AS2017 
+on AS2017.ProductKey=AP.ProductKey 
+where ProductName='Mountain-200 Black, 42'
+group by productname,ModelName
+```
+
+Scenario 18: The customer relationship team wants to evaluate customer purchasing power by matching annual income with 2017 order quantities. Retrieve all customers' first names, last names, annual income, and total quantities purchased in 2017, ensuring inactive customers display 0.
 
