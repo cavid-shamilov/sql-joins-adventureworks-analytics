@@ -262,5 +262,59 @@ where ProductName='Mountain-200 Black, 42'
 group by productname,ModelName
 ```
 
-Scenario 18: The customer relationship team wants to evaluate customer purchasing power by matching annual income with 2017 order quantities. Retrieve all customers' first names, last names, annual income, and total quantities purchased in 2017, ensuring inactive customers display 0.
+Scenario 18: The customer analytics team wants to evaluate overall customer purchasing activity. Retrieve all customers' first names, last names, annual incomes, and total order quantities in 2017, ensuring that customers with no orders display 0.
+
+```sql
+select FirstName,
+LastName,
+AnnualIncome,
+isnull(sum(orderquantity), 0) as [Total Quantity]
+from AdventureWorks_Customers as AC
+left join AdventureWorks_Sales_2017 as AS2017
+on  AC.CustomerKey=AS2017.CustomerKey
+group by FirstName,LastName,AnnualIncome
+```
+
+Scenario 19: The category manager wants to audit customer purchasing performance for the 'Bikes' category in 2017. Retrieve all customers' first names, last names, and the total quantity of bikes purchased in 2017 (Total Bikes Bought), ensuring customers with zero bike purchases display 0.
+
+```sql
+select
+firstname,
+lastname,
+isnull(sum(orderquantity), 0) as [Total Bikes]
+from Adventureworks_customers as AC
+left join  AdventureWorks_Sales_2017 as AS2017
+on AC.customerkey=As2017.customerkey
+left join AdventureWorks_Products as AP
+ON AS2017.ProductKey = AP.ProductKey
+left join AdventureWorks_Product_Subcategories as APS
+ON AP.ProductSubcategoryKey = APS.ProductSubcategoryKey
+left join AdventureWorks_Product_Categories as APC
+ON APS.ProductCategoryKey = APC.ProductCategoryKey AND APC.CategoryName = 'Bikes'
+group by FirstName,LastName
+```
+
+Scenario 20: The management team requires a comprehensive regional report combining overall customer profiles, geographical territories, and specific purchasing behavior for the 'Category' (Bikes) in 2017.
+
+```sql
+select
+firstname,
+lastname,
+continent,
+region,
+isnull(sum(orderquantity), 0) as [Total Bikes]
+from Adventureworks_customers as AC
+left join  AdventureWorks_Sales_2017 as AS2017
+on AC.customerkey=As2017.customerkey
+left join AdventureWorks_Territories as AWT
+on AWT.SalesTerritoryKey=AS2017.TerritoryKey
+left join AdventureWorks_Products as AP
+ON AS2017.ProductKey = AP.ProductKey
+left join AdventureWorks_Product_Subcategories as APS
+ON AP.ProductSubcategoryKey = APS.ProductSubcategoryKey
+left join AdventureWorks_Product_Categories as APC
+ON APS.ProductCategoryKey = APC.ProductCategoryKey AND APC.CategoryName = 'Bikes'
+group by FirstName,LastName,continent,region
+```
+
 
