@@ -316,5 +316,51 @@ left join AdventureWorks_Product_Categories as APC
 ON APS.ProductCategoryKey = APC.ProductCategoryKey AND APC.CategoryName = 'Bikes'
 group by FirstName,LastName,continent,region
 ```
+Scenario 21: The commercial strategy team wants to audit customer retention and year-over-year trading patterns. Retrieve all unique customers who engaged in transactions during either 2016 (AdventureWorks_Sales_2016) or 2017 (AdventureWorks_Sales_2017), capturing customers exclusive to 2016, exclusive to 2017, and active in both years without omitting any records.
+
+```sql
+select
+AC.FirstName,
+AC.LastName,
+AS2016.OrderQuantity as [2016_Qty],
+AS2017.OrderQuantity as [2017_Qty]
+from AdventureWorks_Sales_2016 as AS2016
+full outer join AdventureWorks_Sales_2017 as AS2017
+on AS2016.CustomerKey = AS2017.CustomerKey
+left join AdventureWorks_Customers as AC
+on AC.CustomerKey = coalesce(AS2016.CustomerKey, AS2017.CustomerKey)
+```
+
+Scenario 22: The product management team wants to analyze product performance shifts between 2016 and 2017. Retrieve all unique product keys from both AdventureWorks_Sales_2016 and AdventureWorks_Sales_2017 along with their total order quantities for each respective year, ensuring that products sold exclusively in 2016, exclusively in 2017, or in both years are fully displayed.
+
+```sql
+with Sales2016 as (
+select
+ProductKey, 
+sum(OrderQuantity) as TotalQty2016
+from AdventureWorks_Sales_2016
+group by ProductKey
+),
+
+Sales2017 as (
+select 
+ProductKey, 
+sum(OrderQuantity) as TotalQty2017
+from AdventureWorks_Sales_2017
+group by ProductKey
+)
+
+select 
+AP.ProductName,
+isnull(S16.TotalQty2016, 0) as [2016_Qty],
+isnull(S17.TotalQty2017, 0) as [2017_Qty]
+from Sales2016 as S16
+full outer join Sales2017 as S17
+on S16.ProductKey = S17.ProductKey
+left join AdventureWorks_Products as AP
+on AP.ProductKey = coalesce(S16.ProductKey, S17.ProductKey);
+```
+
+Scenario 23: 
 
 
