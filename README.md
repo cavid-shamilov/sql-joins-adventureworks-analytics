@@ -361,6 +361,94 @@ left join AdventureWorks_Products as AP
 on AP.ProductKey = coalesce(S16.ProductKey, S17.ProductKey);
 ```
 
-Scenario 23: 
+Scenario 23: The regional management team wants to evaluate sales territory performance shifts between 2016 and 2017. Retrieve all unique territory keys from both AdventureWorks_Sales_2016 and AdventureWorks_Sales_2017 along with their total order quantities for each respective year, ensuring that territories active exclusively in 2016, exclusively in 2017, or in both years are fully displayed.
 
+```sql
+with Sales2016 as (
 
+select TerritoryKey,
+sum(orderquantity) as TotalQty2016
+from AdventureWorks_Sales_2016 as AS2016
+group by TerritoryKey
+),
+
+Sales2017 as (
+select TerritoryKey,
+sum(orderquantity) as TotalQty2017
+from AdventureWorks_Sales_2017 as AS2017
+group by TerritoryKey
+)
+
+select region,
+isnull(S16.TotalQty2016, 0) as [2016_Qty],
+isnull(S17.TotalQty2017, 0) as [2017_Qty]
+from Sales2016 as S16
+full outer join sales2017 as S17
+on S16.TerritoryKey=S17.TerritoryKey
+left join AdventureWorks_Territories as AWT
+on AWT.SalesTerritoryKey=coalesce(S16.TerritoryKey, S17.territorykey)
+```
+
+Scenario 24:  The merchandising executive team wants to audit high-level category performance across consecutive years. Retrieve all product categories along with their total order quantities for both 2016 and 2017 sales cycles, ensuring categories exclusive to 2016, exclusive to 2017, or present in both years are fully captured.
+
+```sql
+with Sales2016 as (
+
+select ProductKey,
+sum(orderquantity) as TotalQty2016
+from AdventureWorks_Sales_2016 as AS2016
+group by ProductKey
+),
+
+Sales2017 as (
+select ProductKey,
+sum(orderquantity) as TotalQty2017
+from AdventureWorks_Sales_2017 as AS2017
+group by ProductKey
+)
+
+select categoryname,
+isnull(sum(S16.TotalQty2016), 0) as [2016_Qty],
+isnull(sum(S17.TotalQty2017), 0) as [2017_Qty]
+from Sales2016 as S16
+full outer join sales2017 as S17
+on S16.ProductKey=S17.ProductKey
+left join AdventureWorks_Products as AP
+on AP.ProductKey=coalesce(S16.productkey, S17.productkey)
+left join AdventureWorks_Product_Subcategories as APS
+on APS.ProductSubcategoryKey=AP.ProductSubcategoryKey
+left join AdventureWorks_Product_Categories as APC
+on APC.ProductCategoryKey=APS.ProductCategoryKey
+group by CategoryName
+```
+
+Scenario 25:  The inventory and product management team wants a granular breakdown of product subcategories to identify shifting trends between 2016 and 2017. Retrieve all product subcategory names along with their total order quantities for both years, ensuring that subcategories active exclusively in 2016, exclusively in 2017, or in both years are fully captured and properly zero-filled.
+
+```sql
+with Sales2016 as (
+
+select ProductKey,
+sum(orderquantity) as TotalQty2016
+from AdventureWorks_Sales_2016 as AS2016
+group by ProductKey
+),
+
+Sales2017 as (
+select ProductKey,
+sum(orderquantity) as TotalQty2017
+from AdventureWorks_Sales_2017 as AS2017
+group by ProductKey
+)
+
+select SubcategoryName,
+isnull(sum(S16.TotalQty2016), 0) as [2016_Qty],
+isnull(sum(S17.TotalQty2017), 0) as [2017_Qty]
+from Sales2016 as S16
+full outer join sales2017 as S17
+on S16.ProductKey=S17.ProductKey
+left join AdventureWorks_Products as AP
+on AP.ProductKey=coalesce(S16.productkey, S17.productkey)
+left join AdventureWorks_Product_Subcategories as APS
+on APS.ProductSubcategoryKey=AP.ProductSubcategoryKey
+group by SubcategoryName
+```
