@@ -528,3 +528,135 @@ If a customer bought items only in 2016, label them as 'Churned'.
 If a customer bought items only in 2017, label them as 'New'.
 
 Ensure that customers active in either or both years are fully displayed using a FULL OUTER JOIN approach.
+
+```sql
+WITH Sales2016 AS (
+    SELECT 
+        CustomerKey,
+        SUM(OrderQuantity) AS TotalQty2016
+    FROM AdventureWorks_Sales_2016
+    GROUP BY CustomerKey
+),
+Sales2017 AS (
+    SELECT 
+        CustomerKey,
+        SUM(OrderQuantity) AS TotalQty2017
+    FROM AdventureWorks_Sales_2017
+    GROUP BY CustomerKey
+)
+SELECT 
+AC.FirstName,
+AC.LastName,
+ISNULL(S16.TotalQty2016, 0) AS [2016_Qty],
+ISNULL(S17.TotalQty2017, 0) AS [2017_Qty],
+    CASE 
+        WHEN S16.CustomerKey IS NOT NULL AND S17.CustomerKey IS NOT NULL THEN 'Retained'
+        WHEN S16.CustomerKey IS NOT NULL AND S17.CustomerKey IS NULL THEN 'Churned'
+        WHEN S16.CustomerKey IS NULL AND S17.CustomerKey IS NOT NULL THEN 'New'
+        ELSE 'Inactive'
+    END AS Customer_Status
+FROM Sales2016 AS S16
+FULL OUTER JOIN Sales2017 AS S17
+    ON S16.CustomerKey = S17.CustomerKey
+LEFT JOIN AdventureWorks_Customers AS AC
+    ON AC.CustomerKey = COALESCE(S16.CustomerKey, S17.CustomerKey)
+```
+
+Scenario 29: The executive board wants a macro-level performance matrix that cross-references Territory Regions and Product Categories to evaluate multi-dimensional growth between 2016 and 2017. Retrieve each Region and Category combination, along with their respective total order quantities for both years (fully zero-filled), ensuring that combinations active exclusively in 2016, exclusively in 2017, or in both years are completely captured.
+
+```sql
+with Sales2016 as (
+select TerritoryKey,productkey,
+sum(orderquantity) as Total_Quantity_2016
+from AdventureWorks_Sales_2016 as AS2016
+group by TerritoryKey,productkey
+),
+
+Sales2017 as ( 
+select territorykey,productkey,
+sum(orderquantity) as Total_Quantity_2017
+from AdventureWorks_Sales_2017 as AS2017
+group by territorykey,ProductKey)
+
+select Country,
+CategoryName,
+isnull(sum(S16.Total_Quantity_2016), 0) as [2016_Qty],
+isnull(sum(S17.Total_Quantity_2017), 0) as [2017_Qty]
+from Sales2016 as S16
+full outer join Sales2017 as S17
+on S16.territorykey=S17.territorykey and S16.ProductKey = S17.ProductKey
+left join AdventureWorks_Territories as AWT
+on AWT.SalesTerritoryKey=coalesce(S16.TerritoryKey, s17.territorykey)
+left join AdventureWorks_Products as AP
+on AP.ProductKey=coalesce(S16.productkey, s17.productkey)
+left join AdventureWorks_Product_Subcategories as APS
+on APS.ProductSubcategoryKey=AP.ProductSubcategoryKey
+left join AdventureWorks_Product_Categories as APC
+on APC.ProductCategoryKey=APS.ProductCategoryKey
+group by Country,CategoryName
+```
+
+Scenario 30: For the final executive review, the board requires an all-encompassing strategic performance matrix that combines Country, Product Category, and multi-year order volumes. Retrieve each Country and Category combination, along with their total order quantities for 2016 and 2017 (properly zero-filled), and add a conditional calculated column named "Growth_Status" using a CASE statement:
+
+If 2017 quantity is greater than 2016 quantity, label as 'Growth'.
+
+If 2017 quantity is less than 2016 quantity, label as 'Decline'.
+
+If both years are equal (and greater than 0), label as 'Stable'.
+
+Otherwise, label as 'New/Inactive'.
+
+Ensure all cross-combinations across both years are completely captured using the established CTE and FULL OUTER JOIN pattern.
+
+```sql
+WITH Sales2016 AS (
+    SELECT 
+        TerritoryKey,
+        ProductKey,
+        SUM(OrderQuantity) AS Total_Quantity_2016
+    FROM AdventureWorks_Sales_2016
+    GROUP BY TerritoryKey, ProductKey
+),
+Sales2017 AS ( 
+    SELECT 
+        TerritoryKey,
+        ProductKey,
+        SUM(OrderQuantity) AS Total_Quantity_2017
+    FROM AdventureWorks_Sales_2017
+    GROUP BY TerritoryKey, ProductKey
+),
+AggregatedData AS (
+    SELECT 
+        COALESCE(S16.TerritoryKey, S17.TerritoryKey) AS TerritoryKey,
+        COALESCE(S16.ProductKey, S17.ProductKey) AS ProductKey,
+        ISNULL(S16.Total_Quantity_2016, 0) AS Qty_2016,
+        ISNULL(S17.Total_Quantity_2017, 0) AS Qty_2017
+    FROM Sales2016 AS S16
+    FULL OUTER JOIN Sales2017 AS S17
+        ON S16.TerritoryKey = S17.TerritoryKey 
+       AND S16.ProductKey = S17.ProductKey
+)
+SELECT 
+    AWT.Country,
+    APC.CategoryName,
+    SUM(AD.Qty_2016) AS [2016_Qty],
+    SUM(AD.Qty_2017) AS [2017_Qty],
+    CASE 
+        WHEN SUM(AD.Qty_2017) > SUM(AD.Qty_2016) THEN 'Growth'
+        WHEN SUM(AD.Qty_2017) < SUM(AD.Qty_2016) THEN 'Decline'
+        WHEN SUM(AD.Qty_2017) = SUM(AD.Qty_2016) AND SUM(AD.Qty_2017) > 0 THEN 'Stable'
+        ELSE 'New/Inactive'
+    END AS Growth_Status
+FROM AggregatedData AS AD
+LEFT JOIN AdventureWorks_Territories AS AWT
+    ON AWT.SalesTerritoryKey = AD.TerritoryKey
+LEFT JOIN AdventureWorks_Products AS AP
+    ON AP.ProductKey = AD.ProductKey
+LEFT JOIN AdventureWorks_Product_Subcategories AS APS
+    ON APS.ProductSubcategoryKey = AP.ProductSubcategoryKey
+LEFT JOIN AdventureWorks_Product_Categories AS APC
+    ON APC.ProductCategoryKey = APS.ProductCategoryKey
+GROUP BY 
+    AWT.Country,
+    APC.CategoryName
+```
