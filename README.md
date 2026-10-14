@@ -452,3 +452,71 @@ left join AdventureWorks_Product_Subcategories as APS
 on APS.ProductSubcategoryKey=AP.ProductSubcategoryKey
 group by SubcategoryName
 ```
+
+Scenario 26:  The international business development team wants to evaluate high-level macroeconomic shifts across different countries between 2016 and 2017. Retrieve all country names along with their total order quantities for both the 2016 and 2017 sales cycles, ensuring that countries active exclusively in 2016, exclusively in 2017, or in both years are completely captured and properly zero-filled.
+
+```sql
+with Sales2016 as (
+select TerritoryKey,
+sum(orderquantity) as Total_Quantity_2016
+from AdventureWorks_Sales_2016 as AS2016
+group by TerritoryKey
+),
+
+Sales2017 as ( 
+select territorykey,
+sum(orderquantity) as Total_Quantity_2017
+from AdventureWorks_Sales_2017 as AS2017
+group by territorykey)
+
+select Country,
+isnull(sum(S16.Total_Quantity_2016), 0) as [2016_Qty],
+isnull(sum(S17.Total_Quantity_2017), 0) as [2017_Qty]
+from Sales2016 as S16
+full outer join Sales2017 as S17
+on S16.territorykey=S17.territorykey
+left join AdventureWorks_Territories as AWT
+on AWT.SalesTerritoryKey=coalesce(S16.TerritoryKey, s17.territorykey)
+group by Country
+```
+
+Scenario 27:  The sales operations team wants to identify high-activity customers across 2016 and 2017. However, to filter out casual buyers, they only want to evaluate transactions where the OrderQuantity is greater than 2 (OrderQuantity > 2). For these filtered transactions, they need a comparative report showing each customer's total distinct transaction count (how many separate orders they placed) rather than just total item quantities, complete with customer names.
+
+```sql
+WITH FilteredSales2016 AS (
+    SELECT 
+        CustomerKey,
+        OrderNumber,
+        OrderQuantity
+    FROM AdventureWorks_Sales_2016
+    WHERE OrderQuantity > 2
+),
+FilteredSales2017 AS (
+    SELECT 
+        CustomerKey,
+        OrderNumber,
+        OrderQuantity
+    FROM AdventureWorks_Sales_2017
+    WHERE OrderQuantity > 2
+),
+AggregatedSales AS (
+select
+coalesce(S16.CustomerKey, S17.CustomerKey) AS CustomerKey,
+count(distinct S16.OrderNumber) as Orders_2016,
+count(distinct S17.OrderNumber) as Orders_2017
+from FilteredSales2016 as S16
+full outer join FilteredSales2017 as S17
+on S16.CustomerKey = S17.CustomerKey
+group by coalesce(S16.CustomerKey, S17.CustomerKey)
+)
+select 
+AC.FirstName,
+AC.LastName,
+AS_Agg.Orders_2016 as [Total Order 2016],
+AS_Agg.Orders_2017 as [Total Order 2017]
+from AggregatedSales as AS_Agg
+left join AdventureWorks_Customers as AC
+on AC.CustomerKey = AS_Agg.CustomerKey
+where AS_Agg.Orders_2016 > 2 and AS_Agg.Orders_2017 > 2
+```
+
