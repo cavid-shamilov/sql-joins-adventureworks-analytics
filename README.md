@@ -519,4 +519,12 @@ left join AdventureWorks_Customers as AC
 on AC.CustomerKey = AS_Agg.CustomerKey
 where AS_Agg.Orders_2016 > 2 and AS_Agg.Orders_2017 > 2
 ```
+Scenario 28: The strategy team wants to audit customer spending trends across 2016 and 2017 to classify customer behavior. Retrieve each customer's full name, their total order quantities for 2016 and 2017 (properly zero-filled), and a conditional column named "Customer_Status" using a CASE statement:
 
+If a customer bought items in both 2016 and 2017, label them as 'Retained'.
+
+If a customer bought items only in 2016, label them as 'Churned'.
+
+If a customer bought items only in 2017, label them as 'New'.
+
+Ensure that customers active in either or both years are fully displayed using a FULL OUTER JOIN approach.
